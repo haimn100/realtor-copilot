@@ -1,0 +1,36 @@
+{
+  "name": "realtor-copilot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "prestart": "npm run build",
+    "start": "node dist/src/index.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run build",
+    "test": "tsx --test tests/*.test.ts",
+    "test:db": "tsx --test tests/database/*.test.ts",
+    "test:live": "tsx --test tests/live/*.test.ts",
+    "demo": "tsx scripts/demo.ts",
+    "tunnel:dev": "ngrok http http://127.0.0.1:8787 --inspect=false",
+    "verify:mcp": "tsx scripts/verify-mcp.ts",
+    "setup:dev": "tsx scripts/setup-dev.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
+    "@modelcontextprotocol/node": "2.1.1",
+    "@modelcontextprotocol/server": "2.3.1",
+    "@supabase/supabase-js": "2.117.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.4",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}
