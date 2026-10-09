@@ -146,3 +146,6 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Private WhatsApp source, reviewed manifests, previews and generated one-time SQL
+artifacts/whatsapp-history/

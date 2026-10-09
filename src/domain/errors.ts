@@ -1,5 +1,5 @@
 export class AppError extends Error {
-  constructor(public readonly code: 'NOT_FOUND' | 'FORBIDDEN' | 'UNAUTHENTICATED' | 'INVALID_INPUT' | 'DATA_ERROR', message: string) {
+  constructor(public readonly code: 'NOT_FOUND' | 'FORBIDDEN' | 'UNAUTHENTICATED' | 'INVALID_INPUT' | 'DATA_ERROR' | 'CONFLICT', message: string) {
     super(message);
     this.name = 'AppError';
   }

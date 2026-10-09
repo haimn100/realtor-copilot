@@ -1,0 +1,84 @@
+{
+  "endpoint": "https://parklike-uncriticizingly-johanne.ngrok-free.dev/mcp",
+  "input": {
+    "import_key": "smoke-67a72257-a6c6-4005-a246-77c4e57a0899",
+    "batch_key": "one",
+    "target_display_name": "חיים2 smoke 67a72257-a6c6-4005-a246-77c4e57a0899",
+    "source": {
+      "kind": "whatsapp_txt",
+      "name": "SYNTHETIC: no original transcript"
+    },
+    "findings": [
+      {
+        "key": "dated_budget",
+        "kind": "fact",
+        "summary": "Synthetic historical budget.",
+        "evidence": "explicit",
+        "source_speaker": "Haim",
+        "occurred_at": "2024-05-25T10:00:00-05:00",
+        "source_quote": "Synthetic budget USD 165000.",
+        "fact": {
+          "category": "requirement",
+          "key": "budget_max",
+          "value": {
+            "amount": 165000,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "key": "later_budget",
+        "kind": "fact",
+        "summary": "Date-only source budget; present applicability unconfirmed.",
+        "evidence": "uncertain",
+        "source_date": "September 2026",
+        "uncertainty": [
+          "No source timezone or exact instant."
+        ],
+        "fact": {
+          "category": "requirement",
+          "key": "budget_max",
+          "value": {
+            "amount": 2800000,
+            "currency": "MXN"
+          }
+        }
+      },
+      {
+        "key": "group_response",
+        "kind": "property_discussion",
+        "summary": "Synthetic ambiguous response to two offers.",
+        "evidence": "uncertain",
+        "details": {
+          "links": [
+            "https://example.test/one",
+            "https://example.test/two"
+          ]
+        },
+        "uncertainty": [
+          "No unit-specific attribution."
+        ]
+      },
+      {
+        "key": "reconfirm",
+        "kind": "proposed_action",
+        "summary": "Reconfirm synthetic client interest.",
+        "evidence": "inferred"
+      }
+    ],
+    "limitations": [
+      "Partial synthetic extraction; no source coverage claim."
+    ]
+  },
+  "saved": {
+    "client_id": "b626ba40-dc6a-4c79-82cc-d2865512de1e",
+    "display_name": "חיים2 smoke 67a72257-a6c6-4005-a246-77c4e57a0899",
+    "batch_key": "one",
+    "saved_findings_count": 4,
+    "historical_facts_count": 1,
+    "replayed": false,
+    "limitations": [
+      "Partial synthetic extraction; no source coverage claim."
+    ]
+  }
+}

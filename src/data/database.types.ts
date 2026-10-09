@@ -16,6 +16,13 @@ export type Database = {
     Tables: {
       client_facts: {
         Row: {
+          source_date: string | null
+          evidence: string | null
+          applicability: string | null
+          source_at: string | null
+          valid_until: string | null
+          source_quote: string | null
+          strength: string
           category: string
           client_id: string
           confidence: number
@@ -29,11 +36,18 @@ export type Database = {
           source_type: string
           status: string
           superseded_by_id: string | null
-          valid_from: string
+          valid_from: string | null
           value_json: Json
           workspace_id: string
         }
         Insert: {
+          source_date?: string | null
+          evidence?: string | null
+          applicability?: string | null
+          source_at?: string | null
+          valid_until?: string | null
+          source_quote?: string | null
+          strength?: string
           category: string
           client_id: string
           confidence?: number
@@ -47,11 +61,18 @@ export type Database = {
           source_type?: string
           status?: string
           superseded_by_id?: string | null
-          valid_from?: string
+          valid_from?: string | null
           value_json: Json
           workspace_id: string
         }
         Update: {
+          source_date?: string | null
+          evidence?: string | null
+          applicability?: string | null
+          source_at?: string | null
+          valid_until?: string | null
+          source_quote?: string | null
+          strength?: string
           category?: string
           client_id?: string
           confidence?: number
@@ -65,7 +86,7 @@ export type Database = {
           source_type?: string
           status?: string
           superseded_by_id?: string | null
-          valid_from?: string
+          valid_from?: string | null
           value_json?: Json
           workspace_id?: string
         }
@@ -233,6 +254,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          memory_version: number
           created_at: string
           created_by: string | null
           display_name: string
@@ -247,6 +269,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          memory_version?: number
           created_at?: string
           created_by?: string | null
           display_name: string
@@ -261,6 +284,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          memory_version?: number
           created_at?: string
           created_by?: string | null
           display_name?: string
@@ -286,6 +310,9 @@ export type Database = {
       }
       interactions: {
         Row: {
+          request_key: string | null
+          request_payload: Json | null
+          response_json: Json | null
           channel: string | null
           client_id: string | null
           content: string | null
@@ -301,6 +328,9 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          request_key?: string | null
+          request_payload?: Json | null
+          response_json?: Json | null
           channel?: string | null
           client_id?: string | null
           content?: string | null
@@ -316,6 +346,9 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          request_key?: string | null
+          request_payload?: Json | null
+          response_json?: Json | null
           channel?: string | null
           client_id?: string | null
           content?: string | null
@@ -757,6 +790,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          due_date: string | null
           assigned_to: string | null
           client_id: string | null
           completed_at: string | null
@@ -774,6 +808,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          due_date?: string | null
           assigned_to?: string | null
           client_id?: string | null
           completed_at?: string | null
@@ -791,6 +826,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          due_date?: string | null
           assigned_to?: string | null
           client_id?: string | null
           completed_at?: string | null
@@ -913,9 +949,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      persist_client_import_facts: {
+        Args: { p_workspace_id: string; p_receipt_id: string }
+        Returns: number
+      }
+      import_client_findings: {
+        Args: { p_workspace_id: string; p_request: Json }
+        Returns: Json
+      }
+      write_client_memory: {
+        Args: { p_workspace_id: string; p_client_id: string; p_operation: string; p_request: Json }
+        Returns: Json
+      }
+      get_client_history: {
+        Args: { p_workspace_id: string; p_client_id: string; p_limit?: number; p_cursor?: Json }
+        Returns: Json
+      }
       create_client_with_facts: {
         Args: { p_client: Json; p_facts?: Json; p_workspace_id: string }
         Returns: {
+          memory_version: number
           created_at: string
           created_by: string | null
           display_name: string
@@ -939,6 +992,13 @@ export type Database = {
       remember_client_fact: {
         Args: { p_client_id: string; p_fact: Json; p_workspace_id: string }
         Returns: {
+          source_date: string | null
+          evidence: string | null
+          applicability: string | null
+          source_at: string | null
+          valid_until: string | null
+          source_quote: string | null
+          strength: string
           category: string
           client_id: string
           confidence: number
@@ -952,7 +1012,7 @@ export type Database = {
           source_type: string
           status: string
           superseded_by_id: string | null
-          valid_from: string
+          valid_from: string | null
           value_json: Json
           workspace_id: string
         }

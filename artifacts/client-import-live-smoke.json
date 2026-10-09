@@ -1,0 +1,23 @@
+{
+  "endpoint": "https://parklike-uncriticizingly-johanne.ngrok-free.dev/mcp",
+  "tools": 14,
+  "marker": "Import Smoke 1a1dd38d-8ed2-44f6-84b9-73481e608f59",
+  "source_name": "Import Smoke 1a1dd38d-8ed2-44f6-84b9-73481e608f59.txt",
+  "session_id": "572bbd09-1ba5-4aba-817c-1fd69ae73bf4",
+  "client_id": "08365174-46e9-4887-ad79-3336de327b6c",
+  "result": {
+    "facts": 1,
+    "tasks": 0,
+    "coverage": "all_parsed_text_messages_classified",
+    "client_id": "08365174-46e9-4887-ad79-3336de327b6c",
+    "interactions": 1,
+    "property_events": 0,
+    "semantic_verification": "AI extraction; not independently verified"
+  },
+  "checks": [
+    "premature completion refused",
+    "batch retry replayed",
+    "completion retry replayed",
+    "persisted historical evidence recalled"
+  ]
+}

@@ -27,7 +27,9 @@ test('source and production HTTP endpoints expose every registered input/output 
       await client.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${address.port}/mcp`)));
       const { tools } = await client.listTools();
       verifyToolDiscovery(tools);
-      assert.equal(tools.length, 8);
+      assert.equal(tools.length, 13);
+      for (const name of ['create_client','find_clients','get_client_context','remember_client_fact','save_property','get_property_context','update_client_property','get_client_property_history'])
+        assert(tools.some(tool => tool.name === name));
       assert(!JSON.stringify(tools.map(t => t.inputSchema)).includes('workspace_id'));
       assert.throws(() => verifyToolDiscovery(tools.slice(0, 4)), /MCP tool mismatch/);
       assert.throws(() => verifyToolDiscovery(tools.map((t, i) => i ? t : { ...t, outputSchema: undefined })), /schema mismatch/);
@@ -38,12 +40,13 @@ test('source and production HTTP endpoints expose every registered input/output 
   }
 });
 
-test('all eight handlers preserve existing response shapes and validate both property-context branches', async () => {
+test('all eleven handlers retain existing fields and validate new memory contracts and property-context branches', async () => {
   const clientId = '11111111-1111-4111-8111-111111111111';
   const propertyId = '22222222-2222-4222-8222-222222222222';
   const timestamp = '2026-10-07T12:00:00Z';
-  const identity = { id: clientId, display_name: 'John', first_name: null, last_name: null, status: 'lead', email: null, phone: null, notes: null };
-  const fact = { id: 'fact', category: 'requirement', key: 'bedrooms_min', value_json: 2, status: 'current', confidence: 1, importance: 'normal', valid_from: timestamp };
+  const identity = { id: clientId, display_name: 'John', first_name: null, last_name: null, status: 'lead', email: null, phone: null, notes: null, memory_version: 0 };
+  const fact = { id: 'fact', category: 'requirement', key: 'bedrooms_min', value_json: 2, status: 'current', confidence: 1, importance: 'normal', valid_from: timestamp,
+    created_at: timestamp, created_by: null, source_type: 'manual', source_ref: null, source_interaction_id: null, superseded_by_id: null, applicability: 'confirmed_current', source_at: null, valid_until: null, source_quote: null, strength: 'hard' };
   const property: SavedProperty = { id: propertyId, title: 'Marbella', property_type: null, development_name: null,
     address: null, neighborhood: 'Coco Beach', city: 'Playa del Carmen', state: 'Quintana Roo', country: 'Mexico',
     bedrooms: 2, bathrooms: null, interior_m2: null, exterior_m2: null, total_m2: null, asking_price: 3800000,
@@ -55,6 +58,9 @@ test('all eight handlers preserve existing response shapes and validate both pro
     createClient: async () => identity, findClients: async () => ({ clients: [identity], has_more: false }),
     rememberFact: async () => fact,
     loadContext: async () => ({ client: identity, facts: [fact], properties: [], propertyEvents: [], interactions: [], tasks: [], searches: [], truncated: [] }),
+    updateClient: async () => ({ client: identity, interaction_id: clientId, facts: [], follow_ups: [], replayed: false }),
+    recordInteraction: async () => ({ client: identity, interaction_id: clientId, facts: [fact], follow_ups: [], replayed: false }),
+    loadHistory: async () => ({ client: identity, timeline: [], coverage: { limit: 30, has_more: false, next_cursor: null } }),
   };
   const propertyRepository: PropertyRepository = {
     saveProperty: async () => ({ property, source: null }), updateClientProperty: async () => relationship,
@@ -82,6 +88,9 @@ test('all eight handlers preserve existing response shapes and validate both pro
       ['update_client_property', { client_id: clientId, property_id: propertyId, status: 'considering' }],
       ['get_client_property_history', { client_id: clientId, property_id: propertyId }],
       ['get_property_context', { name: 'Marbella' }],
+      ['update_client', { client_id: clientId, expected_version: 0, idempotency_key: 'profile', patch: { status: 'active' } }],
+      ['record_interaction', { client_id: clientId, expected_version: 0, idempotency_key: 'call', interaction_type: 'call', occurred_at: timestamp, summary: 'Budget changed' }],
+      ['get_client_history', { client_id: clientId }],
     ];
     for (const [name, args] of cases) {
       const result = await client.callTool({ name, arguments: args });

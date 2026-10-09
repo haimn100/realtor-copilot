@@ -81,7 +81,7 @@ test('tunnel allows only the configured host and exact HTTPS origin, retaining s
     const listed = await send(port, { Host }, JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }));
     assert.equal(listed.status, 200);
     const tools = JSON.parse(listed.body).result.tools as { name: string; inputSchema: object }[];
-    assert.deepEqual(tools.map(t => t.name).sort(), ['create_client', 'find_clients', 'get_client_context', 'get_client_property_history', 'get_property_context', 'remember_client_fact', 'save_property', 'update_client_property']);
+    assert.deepEqual(tools.map(t => t.name).sort(), ['create_client', 'find_clients', 'get_client_context', 'get_client_history', 'get_client_import_guidance', 'get_client_property_history', 'get_property_context', 'import_client_findings', 'record_interaction', 'remember_client_fact', 'save_property', 'update_client', 'update_client_property']);
     assert(!JSON.stringify(tools.map(t => t.inputSchema)).includes('workspace_id'));
     assert.equal((await send(port, { Host }, '', 'GET')).status, 405);
     assert.equal((await send(port, { Host }, '', 'DELETE')).status, 405);

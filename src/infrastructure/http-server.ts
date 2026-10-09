@@ -8,6 +8,7 @@ import { AppError } from '../domain/errors.js';
 import { createMcpServer } from '../mcp/server.js';
 import type { IdentityProvider } from './identity.js';
 import type { Config } from './config.js';
+import { ClientImportService, SupabaseImportStore } from '../import/client-import.js';
 
 export function createHttpServer(identity: IdentityProvider, config?: Pick<Config, 'NODE_ENV' | 'DEV_TUNNEL_URL'>): Server {
   if (config?.DEV_TUNNEL_URL && config.NODE_ENV !== 'development') throw new Error('Tunnel access requires development mode.');
@@ -33,7 +34,7 @@ export function createHttpServer(identity: IdentityProvider, config?: Pick<Confi
     try {
       const context = await identity.resolve(request);
       server = createMcpServer(new RealtorClientService(new SupabaseClientRepository(context)),
-        new RealtorPropertyService(new SupabasePropertyRepository(context)));
+        new RealtorPropertyService(new SupabasePropertyRepository(context)), new ClientImportService(new SupabaseImportStore(context)));
       const transport = new NodeStreamableHTTPServerTransport({
         sessionIdGenerator: undefined, enableJsonResponse: true, maxRequestBodySize: 64 * 1024,
       });

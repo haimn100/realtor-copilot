@@ -6,15 +6,31 @@ Uses the official MCP SDK v2 and stateless Streamable HTTP at `/mcp`.
 
 ## Local setup
 
+Simple AI-led conversation import adds `get_client_import_guidance` and
+`import_client_findings` (thirteen tools). ChatGPT reads its attachment and sends
+only compact findings; no raw source upload, chunks or finalize step is required.
+See [conversation import and ChatGPT acceptance](docs/client-conversation-import.md)
+for the exact ChatGPT workflow, explicit NEW target names such as חיים2/Haim2,
+historical-only persistence and development deployment. The thirteen public
+business tables are reused; the earlier private source staging schema is retired.
+
 Requires Node.js 22+ and Supabase. A fresh Supabase project can create the
-application schema using all four files in `supabase/migrations`, in filename
-order: initial schema, client memory, property memory, then Phase 0 security.
+application schema using all ten files in `supabase/migrations`, in filename
+order: initial schema, client memory, property memory, Phase 0 security,
+Phase 1 client memory, Phase 1 HTTP conflict handling, fact applicability, then
+generic client import staging, SHA-256 extension-schema portability, then the
+simple findings importer which removes private staging.
 The original initial migration was recovered from the live migration ledger.
 Supabase supplies the Auth schema and database roles; migrations supply all
-13 application tables, policies, RPCs and guards. All four migrations are already
-applied to project `mcnhnxeayepgrstjefvg`. Do not replay the initial migration or
+13 public application tables, policies, RPCs and guards. All ten migration bodies are
+applied to project `mcnhnxeayepgrstjefvg`; the simplified importer is live with thirteen tools.
+Do not replay the initial migration or
 reset that project. See [Phase 0 verification](docs/phase0.md) for evidence,
 security changes and the remaining manual ChatGPT check.
+See [Phase 1 client memory](docs/phase1.md) for the new write protocol, acceptance example and isolated verification.
+See [live Phase 1 evidence](docs/phase1-live-acceptance.md) for migration ledger mappings,
+endpoint validation and the remaining ChatGPT refresh step, and the
+[next-phase plan](docs/next-phase-plan.md) for proposed property evidence work.
 
 ```sh
 npm ci
@@ -48,10 +64,15 @@ his ID. Each demo run creates a new client.
 
 | Tool | Input | Result |
 | --- | --- | --- |
+| `get_client_import_guidance` | `{}` (optional) | Attachment extraction instructions and compact findings schema |
+| `import_client_findings` | `import_key`, `batch_key`, NEW `target_display_name`, 1–40 compact `findings`, optional source/limitations | Immediate atomic persistence; historical evidence and safe identical retries |
 | `create_client` | `display_name`, optional identity/status/notes and `facts` | Client identity and initial fact count |
 | `find_clients` | `name`, optional `status` / `limit` | Concise identity matches and `has_more` |
 | `get_client_context` | `client_id` | Current facts grouped by category plus bounded activity |
 | `remember_client_fact` | `client_id`, `fact` | New current fact |
+| `update_client` | `client_id`, `expected_version`, `idempotency_key`, `patch`, optional `source_ref` | Safely patched profile, write receipt; before/after history retained |
+| `record_interaction` | `client_id`, `expected_version`, `idempotency_key`, `interaction_type`, `occurred_at`, `summary`, optional `facts` / `follow_ups` | One interaction plus all changes/tasks atomically; replayable result |
+| `get_client_history` | `client_id`, optional `limit` / `cursor` | Timeline with effective/recording times, provenance, superseded facts and older-page cursor |
 | `save_property` | New `title` and known details, optional `source`; or existing `property_id` and changes/source | Concise canonical property and saved source |
 | `get_property_context` | Exactly one of `property_id` or `name` | Details, sources/verification, associated clients, recent events and existing research; ambiguous names return choices |
 | `update_client_property` | `client_id`, `property_id`, optional `status`, `interest_level`, `notes`, `rejection_reason` | Current relationship; every meaningful change appends an event atomically |
@@ -81,7 +102,11 @@ for multiple preferred areas. Replacement serializes concurrent writes, marks
 the previous value `superseded`, inserts the current value and sets the previous
 row's `superseded_by_id`, in one database transaction. A partial unique index
 enforces one current fact per key. Creation and initial facts are also atomic.
-Repeated writes create new history; write tools are not idempotent.
+Legacy `create_client` and `remember_client_fact` retain their non-idempotent behavior.
+For retry-safe conversation/fact capture use `record_interaction`; profile patches
+use `update_client`. Both reject stale `expected_version` values and reuse
+the original result on identical `idempotency_key` retries. Current fact summaries
+include IDs, strength, provenance, effective `valid_from` and `recorded_at`.
 
 Context includes identity/status/notes, current requirements/preferences/dislikes/
 context/constraints, property status/details/rejection/viewing information, recent
@@ -142,8 +167,8 @@ No association returns null current state and an empty timeline.
 
 ### ChatGPT milestone test
 
-Restart the existing server with the new build and rediscover tools in the
-existing ChatGPT connection. The server must advertise eight tools. Use the
+Phase 1 is deployed. Refresh the existing **Realtor Copilot Dev** connection in
+ChatGPT Plugins, confirm eleven tools, then start a new conversation. Use the
 retained John:
 
 1. “Save this property: Marbella Residence unit 104, 2BR, 3.8M MXN, Coco Beach.”
@@ -167,7 +192,7 @@ ChatGPT conversation remains a manual acceptance test.
 
 ## Architecture and identity
 
-- `src/mcp`: eight validated business tools and MCP response formatting.
+- `src/mcp`: eleven validated business tools and MCP response formatting.
 - `src/application`: typed service/repository contracts and context construction.
 - `src/data`: workspace-scoped Supabase repository and generated database types.
 - `src/infrastructure`: validated environment, identity adapter, HTTP transport.
@@ -201,7 +226,7 @@ See [official SDK](https://ts.sdk.modelcontextprotocol.io/v2/) and
 ## Temporary ChatGPT dogfood connection over HTTPS
 
 **This is public, unauthenticated development access, not production-ready.**
-Anyone who reaches the URL can use all eight tools to read or write development
+Anyone who reaches the URL can use all advertised tools to read or write development
 data as the fixed development Supabase user. Host/Origin validation is not
 authentication. Use only the intended development data, keep the URL private,
 and **stop the tunnel immediately after testing; never leave it exposed**.
@@ -294,8 +319,8 @@ npm run verify:mcp
 ```
 
 Or set `MCP_URL` directly to the copied HTTPS `/mcp` URL. This command performs
-MCP initialization, discovers exactly eight tools, calls `find_clients` for John,
-and calls `get_client_context`. It verifies the persisted current max budget
+MCP initialization, discovers exactly eleven tools, calls `find_clients` for John,
+and calls `get_client_context`. It verifies the original Phase 0 baseline max budget
 4.5M MXN, 2+ bedrooms, investment intent, and Coco Beach preference without
 writing data. With no `MCP_URL`, it checks the local endpoint. If John is
 ambiguous, use an ID printed by `find_clients`:
@@ -365,12 +390,16 @@ npm run typecheck
 npm run build
 npm run test:db     # Disposable native PostgreSQL migration/security suite
 npm run verify:mcp  # Read-only check of retained John; set MCP_URL for HTTPS
+npm run verify:phase1 # All eleven tools on running endpoint; disposable synthetic fixtures
 npm run test:live   # Real Supabase + SDK HTTP client; requires .env and CLI login
 ```
 
 `npm start` and `npm test` rebuild first. Discovery tests compare the source and
-compiled HTTP servers with all eight registered input/output contracts.
+compiled HTTP servers with all eleven registered input/output contracts.
 `verify:mcp` also checks these contracts against the selected running endpoint.
+`verify:phase1` writes explicitly labelled synthetic client/property fixtures through
+that endpoint, verifies conversation capture and complete paginated recall over a
+fresh connection, and removes only its exact generated fixtures in `finally`.
 For `test:db`, install PostgreSQL 17+ and put its `bin` directory on PATH, or set
 `PG_BIN` to that directory. It creates and removes its own temporary cluster,
 uses a minimal Supabase Auth/role shim, and never resets the live database.

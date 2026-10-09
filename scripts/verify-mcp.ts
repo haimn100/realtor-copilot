@@ -14,7 +14,7 @@ try {
   const { tools } = await client.listTools();
   verifyToolDiscovery(tools);
   for (const tool of tools) assert(!JSON.stringify(tool.inputSchema).includes('workspace_id'));
-  console.log('Discovered all eight tools; no workspace input.');
+  console.log(`Discovered all ${tools.length} tools; no workspace input.`);
   async function call<T>(name: string, args: Record<string, unknown>): Promise<T> {
     const result = await client.callTool({ name, arguments: args });
     assert(!result.isError, JSON.stringify(result.content));

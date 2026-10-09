@@ -6,6 +6,10 @@ import { tmpdir } from 'node:os';
 import { join, resolve, relative, isAbsolute } from 'node:path';
 import { createServer } from 'node:net';
 import { promisify } from 'node:util';
+import { testPhase1Memory } from './phase1-checks.js';
+import { testFactApplicability } from './fact-applicability-checks.js';
+import { testWhatsAppHistory } from './whatsapp-history-checks.js';
+import { testGenericImport } from './generic-import-checks.js';
 
 test('repository migrations recreate a database and preserve workflows under hardened security', { timeout: 120_000 }, async t => {
   // Native PostgreSQL, not a reset of any configured/local/live Supabase instance.
@@ -18,9 +22,16 @@ test('repository migrations recreate a database and preserve workflows under har
   const address = reservation.address(); assert(address && typeof address !== 'string');
   const port = address.port;
   await new Promise<void>(resolve => reservation.close(() => resolve()));
-  const options = { encoding: 'utf8' as const, windowsHide: true, timeout: 30_000, maxBuffer: 5 * 1024 * 1024 };
+  const options = { encoding: 'utf8' as const, windowsHide: true, timeout: 30_000, maxBuffer: 5 * 1024 * 1024, stdio: 'pipe' as const };
   const psqlArgs = ['-X', '-h', '127.0.0.1', '-p', String(port), '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-qAt'];
-  const sql = (query: string) => execFileSync(bin('psql'), [...psqlArgs, '-c', query], options).trim();
+  // stdin preserves UTF-8 on Windows; psql's native -c argv uses the ANSI codepage.
+  const sql = (query: string) => execFileSync(bin('psql'), psqlArgs, { ...options, input: query }).trim();
+  const asyncSql = (query: string) => new Promise<string>((resolve, reject) => {
+    const child = execFile(bin('psql'), psqlArgs, options, (error, stdout, stderr) => {
+      if (error) reject(Object.assign(error, { stderr })); else resolve(stdout.trim());
+    });
+    child.stdin?.end(query, 'utf8');
+  });
   const file = (path: string) => execFileSync(bin('psql'), [...psqlArgs, '--single-transaction', '-f', path], options);
   let started = false;
   let stopped = false;
@@ -39,7 +50,7 @@ test('repository migrations recreate a database and preserve workflows under har
     const migrations = readdirSync(migrationDir).filter(name => name.endsWith('.sql')).sort();
     assert.equal(migrations[0], '20261007204914_initial_realtor_copilot_schema.sql');
     assert.equal(new Set(migrations.map(name => name.slice(0, 14))).size, migrations.length);
-    assert.equal(migrations.length, 4);
+    assert.equal(migrations.length, 12);
     for (const migration of migrations.slice(0, 3)) file(join(migrationDir, migration));
     file(resolve('tests/database/fixtures.sql'));
     const snapshot = () => JSON.stringify(['clients', 'client_facts', 'properties', 'property_sources', 'client_properties', 'client_property_events', 'interactions', 'tasks'].map(table =>
@@ -61,13 +72,79 @@ test('repository migrations recreate a database and preserve workflows under har
       assert.equal(sql(`select count(*) from public.client_facts where key='concurrent' and status='current'`), '1');
       assert.equal(sql(`select count(*) from public.client_facts where key='concurrent' and status='superseded' and superseded_by_id is not null`), '3');
     });
+    const beforePhase1 = snapshot();
+    file(join(migrationDir, migrations[4]!));
+    file(join(migrationDir, migrations[5]!));
+    await t.test('application conflicts use non-retrying HTTP 409 codes in both RPCs', () => {
+      for (const signature of ['public.remember_client_fact(uuid,uuid,jsonb)', 'public.write_client_memory(uuid,uuid,text,jsonb)']) {
+        const definition = sql(`select pg_get_functiondef('${signature}'::regprocedure)`);
+        assert(!definition.includes("errcode = '40001'"));
+        assert.equal(definition.split("errcode = 'PT409'").length - 1, 2);
+      }
+    });
+    await t.test('Phase 1 preserves existing business fields and all thirteen tables', () => {
+      const after = JSON.stringify(['clients', 'client_facts', 'properties', 'property_sources', 'client_properties', 'client_property_events', 'interactions', 'tasks'].map(table =>
+        sql(`select coalesce(jsonb_agg(to_jsonb(t) - 'memory_version' - 'strength' - 'request_key' - 'request_payload' - 'response_json' - 'due_date' order by id)::text,'[]') from public.${table} t`)));
+      assert.equal(after, beforePhase1);
+      assert.equal(sql(`select count(*) from pg_tables where schemaname='public' and rowsecurity`), '13');
+    });
+    const beforeApplicability = snapshot();
+    file(join(migrationDir, migrations[6]!));
+    await t.test('applicability upgrade preserves every existing business field without classifying legacy rows', () => {
+      const after = JSON.stringify(['clients', 'client_facts', 'properties', 'property_sources', 'client_properties', 'client_property_events', 'interactions', 'tasks'].map(table =>
+        sql(`select coalesce(jsonb_agg(to_jsonb(t) - 'applicability' - 'source_at' - 'valid_until' - 'source_quote' order by id)::text,'[]') from public.${table} t`)));
+      assert.equal(after, beforeApplicability);
+      assert.equal(sql(`select count(*) from public.client_facts where applicability is not null`), '0');
+    });
+    await testFactApplicability(t, sql, asyncSql);
+    await testPhase1Memory(t, sql, asyncSql);
+    await testWhatsAppHistory(t, sql, asyncSql);
+    const beforeGenericImport = snapshot();
+    file(join(migrationDir, migrations[7]!));
+    file(join(migrationDir, migrations[8]!));
+    file(join(migrationDir, migrations[9]!));
+    // Exercise upgrading an already imported date-only receipt without rewriting it.
+    const legacyImport = JSON.stringify({import_key:'legacy_date_only',batch_key:'one',target_display_name:'Legacy import',findings:[
+      {key:'legacy_budget',kind:'fact',summary:'Legacy date-only budget',evidence:'explicit',source_date:'2024-06',source_quote:'USD 150000',fact:{category:'requirement',key:'budget_max',value:{amount:150000,currency:'USD'}}},
+      {key:'legacy_dated',kind:'fact',summary:'Legacy exact source',evidence:'explicit',occurred_at:'2024-06-01T10:00:00Z',fact:{category:'preference',key:'terrace',value:true}}
+    ]});
+    // First confirm the preceding imports do not alter any business data.
+    await t.test('generic import migration preserves business data and thirteen public tables', () => {
+      assert.equal(snapshot(), beforeGenericImport);
+      assert.equal(sql(`select count(*) from pg_tables where schemaname='public' and rowsecurity`), '13');
+      assert.equal(sql(`select count(*) from pg_tables where schemaname='import_private' and rowsecurity`), '0');
+    });
+    const legacyResult = JSON.parse(sql(`begin;set local role authenticated;set local request.jwt.claim.sub='10000000-0000-4000-8000-000000000001';select public.import_client_findings('20000000-0000-4000-8000-000000000001','${legacyImport}'::jsonb);commit;`));
+    assert.equal(legacyResult.historical_facts_count,1);
+    const legacyReceipt = () => sql(`select to_jsonb(i) from public.interactions i where client_id='${legacyResult.client_id}'`);
+    const receiptBefore = legacyReceipt();
+    const datedBefore = sql(`select to_jsonb(f) from public.client_facts f where client_id='${legacyResult.client_id}'`);
+    file(join(migrationDir, migrations[10]!));
+    await t.test('historical import upgrade preserves receipt and existing dated fact; exact retry backfills once', () => {
+      assert.equal(legacyReceipt(),receiptBefore);
+      assert.equal(sql(`select to_jsonb(f)-'source_date'-'evidence' from public.client_facts f where client_id='${legacyResult.client_id}'`),datedBefore);
+      const replay = () => JSON.parse(sql(`begin;set local role authenticated;set local request.jwt.claim.sub='10000000-0000-4000-8000-000000000001';select public.import_client_findings('20000000-0000-4000-8000-000000000001','${legacyImport}'::jsonb);commit;`));
+      assert.equal(replay().historical_facts_count,2);
+      const factsBeforeReplay = sql(`select jsonb_agg(to_jsonb(f) order by id) from public.client_facts f where client_id='${legacyResult.client_id}'`);
+      assert(replay().replayed);
+      assert.equal(sql(`select jsonb_agg(to_jsonb(f) order by id) from public.client_facts f where client_id='${legacyResult.client_id}'`),factsBeforeReplay);
+      assert.equal(legacyReceipt(),receiptBefore);
+      assert.equal(sql(`select count(*) from public.client_facts where client_id='${legacyResult.client_id}' and key='budget_max' and valid_from is null and source_at is null and source_date='2024-06'`),'1');
+    });
+    file(join(migrationDir, migrations[11]!));
+    await testGenericImport(t, sql, asyncSql);
+    await t.test('trusted administrator Auth cleanup retains foreign-key maintenance', () => {
+      sql(`delete from auth.users where id='10000000-0000-4000-8000-000000000001'`);
+      assert.equal(sql(`select count(*) from public.interactions where created_by='10000000-0000-4000-8000-000000000001'`), '0');
+      assert.equal(sql(`select count(*) from public.client_facts where created_by='10000000-0000-4000-8000-000000000001'`), '0');
+    });
     await t.test('administrator fixture cleanup preserves cascade behavior', () => {
       sql(`delete from public.workspaces; set constraints all immediate;`);
       assert.equal(sql('select count(*) from public.client_facts'), '0');
       assert.equal(sql('select count(*) from public.client_property_events'), '0');
     });
     await t.test('migrations also replay into a completely empty application schema', () => {
-      sql('drop schema public cascade; create schema public; grant usage on schema public to anon, authenticated, service_role;');
+      sql('drop schema if exists import_private cascade; drop schema public cascade; create schema public; grant usage on schema public to anon, authenticated, service_role;');
       for (const migration of migrations) file(join(migrationDir, migration));
       assert.equal(sql(`select count(*) from pg_tables where schemaname='public' and rowsecurity`), '13');
       assert.equal(sql('select count(*) from public.clients'), '0');

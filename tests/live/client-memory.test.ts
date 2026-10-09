@@ -58,9 +58,9 @@ test('live Supabase client memory through Streamable HTTP', { timeout: 120_000 }
     let johnId = '';
     let firstBudgetId = '';
     let replacementBudgetId = '';
-    await t.test('advertises all eight business tools with no workspace input', async () => {
+    await t.test('advertises all eleven business tools with no workspace input', async () => {
       const { tools } = await client.listTools();
-      assert.deepEqual(tools.map(tool => tool.name).sort(), ['create_client', 'find_clients', 'get_client_context', 'get_client_property_history', 'get_property_context', 'remember_client_fact', 'save_property', 'update_client_property']);
+      assert.deepEqual(tools.map(tool => tool.name).sort(), ['create_client', 'find_clients', 'get_client_context', 'get_client_history', 'get_client_property_history', 'get_property_context', 'record_interaction', 'remember_client_fact', 'save_property', 'update_client', 'update_client_property']);
       for (const tool of tools) assert(!JSON.stringify(tool.inputSchema).includes('workspace_id'));
       assert.equal(tools.find(tool => tool.name === 'get_client_context')?.annotations?.readOnlyHint, true);
       await assert.rejects(() => call('create_client', { display_name: 'Bad', workspace_id: workspaceB }));

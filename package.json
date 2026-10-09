@@ -19,6 +19,7 @@
     "demo": "tsx scripts/demo.ts",
     "tunnel:dev": "ngrok http http://127.0.0.1:8787 --inspect=false",
     "verify:mcp": "tsx scripts/verify-mcp.ts",
+    "verify:phase1": "tsx scripts/verify-phase1.ts",
     "setup:dev": "tsx scripts/setup-dev.ts"
   },
   "dependencies": {

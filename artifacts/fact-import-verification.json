@@ -1,0 +1,91 @@
+{
+  "status": "PASS",
+  "endpoint": "https://parklike-uncriticizingly-johanne.ngrok-free.dev/mcp",
+  "before": {
+    "original": {
+      "id": "1c82c770-ce77-4eb6-9183-78f301cfb214",
+      "display_name": "Haim",
+      "counts": {
+        "facts": 24,
+        "interactions": 360,
+        "properties": 7,
+        "tasks": 0
+      },
+      "hashes": {
+        "client": "8addee335be84454cdf68d15f9aedb5045d589118d20dc179358026da7f8ea15",
+        "facts": "b138a2cbd15402ef438cf4110fc2ad72a2871884097be90c840e4191b2d8d8b6",
+        "interactions": "3d083c9c619c0ca50e42b46132fe58b04a0470d62179bb8e8f555cbb510ad134",
+        "properties": "047c81cd6773a1cbfe2279f04298e3432f0f2bad57ef1a8788abfa73344f57bc",
+        "tasks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    "target": {
+      "id": "aeaa45c0-2ec0-49ed-a4fa-567d1015d6f8",
+      "display_name": "חיים2",
+      "counts": {
+        "facts": 0,
+        "interactions": 1,
+        "properties": 0,
+        "tasks": 0
+      },
+      "hashes": {
+        "client": "4c72b26a35b892801e3e0b023ee2111eba12416503ae5ab535f8431c3f2050cd",
+        "facts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "interactions": "f075023833212d4576e47f9422fe57b95e5eeb25ea6538b7e998012962984442",
+        "properties": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "tasks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    }
+  },
+  "after": {
+    "original": {
+      "id": "1c82c770-ce77-4eb6-9183-78f301cfb214",
+      "display_name": "Haim",
+      "counts": {
+        "facts": 24,
+        "interactions": 360,
+        "properties": 7,
+        "tasks": 0
+      },
+      "hashes": {
+        "client": "8addee335be84454cdf68d15f9aedb5045d589118d20dc179358026da7f8ea15",
+        "facts": "b138a2cbd15402ef438cf4110fc2ad72a2871884097be90c840e4191b2d8d8b6",
+        "interactions": "3d083c9c619c0ca50e42b46132fe58b04a0470d62179bb8e8f555cbb510ad134",
+        "properties": "047c81cd6773a1cbfe2279f04298e3432f0f2bad57ef1a8788abfa73344f57bc",
+        "tasks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    "target": {
+      "id": "aeaa45c0-2ec0-49ed-a4fa-567d1015d6f8",
+      "display_name": "חיים2",
+      "counts": {
+        "facts": 19,
+        "interactions": 1,
+        "properties": 0,
+        "tasks": 0
+      },
+      "hashes": {
+        "client": "8fd1dde7fc4944549a79d58477fde5089288d63ca158a1f60da528bb58baacaf",
+        "facts": "44bfe6dc457962f8de217b1db09fb3d45eb128568aa86cc42d296d098a1c0022",
+        "interactions": "f075023833212d4576e47f9422fe57b95e5eeb25ea6538b7e998012962984442",
+        "properties": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "tasks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    }
+  },
+  "receipt": {
+    "id": "267b8152-9646-4063-995d-41fa759b8a0a",
+    "findings": 29,
+    "facts": 19,
+    "unchanged": true
+  },
+  "checks": [
+    "fresh local/public discovery and updated guidance",
+    "existing-receipt backfill",
+    "concurrent exact retries without duplicates",
+    "fresh public context/history recall",
+    "19 date-only historical facts with evidence/provenance and null source/effective instants",
+    "zero active requirements/tasks/properties",
+    "original Haim rows unchanged"
+  ]
+}
